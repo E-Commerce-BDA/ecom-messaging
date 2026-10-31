@@ -3,6 +3,59 @@
 All notable changes to `@ecom/messaging` are recorded here. Versions follow
 `Documentation/8.Versioning.md`; `0.x` until the third adopter (ord-011).
 
+## 0.3.0
+
+The consumer half. Created for `srch-002` (search-svc migrates its raw kafkajs
+consumer to the Nest transport), `ca-009` (cart-svc consumes `order.created`)
+and `cat-008` (catalog-svc consumes `product.imported`). Every consumer in the
+platform now runs this protocol instead of its own copy of it.
+
+### Added
+
+- `createKafkaConsumerStrategy` (`@ecom/messaging/nest`) — the Nest Kafka server
+  strategy, pre-configured with `postfixId: ""`, `run.autoCommit: false`,
+  `parser.keepBinary: true` and a deserializer that hands the handler the raw
+  JSON string. Each of those was read out of `@nestjs/microservices` 12.3.2
+  rather than assumed; the three silent failure modes are documented on the
+  function and pinned by tests.
+- `KafkaEventHandler` (`@ecom/messaging/nest`) — `run(ctx, topic, raw, handle)`
+  is the whole protocol: parse, retry `1/2/4/8/16s`, dead-letter on
+  `invalid-*` / `transient-exhausted` / a service-supplied terminal reason,
+  then commit. The invariant is **side effect → counter → offset**, so a record
+  whose dead letter failed keeps its offset and is redelivered.
+  `KafkaConsumerStalledError` is the single exception `run` throws, and only
+  when the dead-letter write itself failed.
+- `ProcessedEventsStore` — `claim(client, eventId, topic)` as
+  `INSERT … ON CONFLICT (event_id) DO NOTHING RETURNING event_id`. Takes the
+  caller's client so the claim and the domain write are one transaction.
+- `KafkaDlqPublisher` + `dlqTopicNameFor` — lazy, shared producer; name from the
+  registry with a `${topic}.dlq` fallback; resolves only once the broker has the
+  record.
+- `KafkaLagSampler` — standalone admin client, `high watermark − committed` per
+  topic, unref'd 15s timer. A committed offset of `-1` means "never committed",
+  not "infinitely behind". A broker that is unreachable at boot logs and leaves
+  the sample missing rather than raising an unhandled rejection, because a lag
+  gauge must never be a reason a process dies.
+- `ConsumerMetrics` — `accepted | skipped | committed | duplicate | ignored |
+  invalid | dlq | commit | stalled`, plus `recordCommit(topic, partition,
+  offset)` and `lastCommit()`.
+
+### Changed
+
+- Peer range for `@ecom/contracts` is now `>=1.9.0 <2`: the consumer surface
+  parses the 1.9.0 `product.imported` payload, which carries `variants`.
+- `@nestjs/microservices ^12.0.1` is a new **optional** peer.
+
+### Notes
+
+- `accepted`, `skipped` and `committed` are three names for "it worked" because
+  search-svc and catalog-svc already disagreed; a handler picks one via
+  `{ kind: "applied", counter }`. Renaming them would have broken two dashboards
+  for no gain.
+- `run()` accepts a `@nestjs/microservices` `KafkaContext` or any object with
+  `getMessage` / `getPartition` / `getConsumer` — the types are structural, so
+  the package still does not import the framework outside `./nest`.
+
 ## 0.2.0
 
 Second cut, created for `cat-007` (catalog-svc, `product.updated` /

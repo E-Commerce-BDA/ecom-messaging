@@ -10,3 +10,12 @@ export * from "./outbox/types.js";
 export * from "./outbox/postgres-outbox.store.js";
 export * from "./outbox/mongo-outbox.store.js";
 export * from "./outbox/outbox.relay.js";
+
+// Consumer side. The two framework-free halves — dead letters and lag — live
+// here because neither has a Nest type; the strategy and the protocol handler
+// are exported from `./nest`, where the Nest peer is already assumed.
+export * from "./consumer/types.js";
+export * from "./consumer/dlq.publisher.js";
+export * from "./consumer/lag.sampler.js";
+export * from "./consumer/consumer-metrics.js";
+export * from "./consumer/processed-events.store.js";

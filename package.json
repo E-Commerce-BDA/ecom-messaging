@@ -1,8 +1,8 @@
 {
   "name": "@ecom/messaging",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "Transactional outbox relay and event publishers shared by every E-Commerce producer",
+  "description": "Transactional outbox relay, event publishers and Kafka consumers shared by every E-Commerce service",
   "license": "UNLICENSED",
   "type": "module",
   "packageManager": "pnpm@11.25.0",
@@ -35,12 +35,16 @@
     "prepack": "pnpm build"
   },
   "peerDependencies": {
-    "@ecom/contracts": ">=1.8.0 <2",
+    "@ecom/contracts": ">=1.9.0 <2",
     "@nestjs/common": "^12.0.1",
+    "@nestjs/microservices": "^12.0.1",
     "kafkajs": "^2.2.4"
   },
   "peerDependenciesMeta": {
     "@nestjs/common": {
+      "optional": true
+    },
+    "@nestjs/microservices": {
       "optional": true
     },
     "kafkajs": {
@@ -48,8 +52,9 @@
     }
   },
   "devDependencies": {
-    "@ecom/contracts": "file:../ecom-contracts/ecom-contracts-1.8.0.tgz",
+    "@ecom/contracts": "file:../ecom-contracts/ecom-contracts-1.9.0.tgz",
     "@nestjs/common": "^12.0.1",
+    "@nestjs/microservices": "^12.0.1",
     "@types/node": "^24.0.0",
     "kafkajs": "^2.2.4",
     "reflect-metadata": "^0.2.2",
