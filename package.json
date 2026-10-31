@@ -1,0 +1,59 @@
+{
+  "name": "@ecom/messaging",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Transactional outbox relay and event publishers shared by every E-Commerce producer",
+  "license": "UNLICENSED",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./nest": {
+      "types": "./dist/nest/index.d.ts",
+      "import": "./dist/nest/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepack": "pnpm build"
+  },
+  "peerDependencies": {
+    "@ecom/contracts": ">=1.8.0 <2",
+    "@nestjs/common": "^12.0.1",
+    "kafkajs": "^2.2.4"
+  },
+  "peerDependenciesMeta": {
+    "@nestjs/common": {
+      "optional": true
+    },
+    "kafkajs": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@ecom/contracts": "file:../ecom-contracts/ecom-contracts-1.8.0.tgz",
+    "@nestjs/common": "^12.0.1",
+    "@types/node": "^24.0.0",
+    "kafkajs": "^2.2.4",
+    "reflect-metadata": "^0.2.2",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
