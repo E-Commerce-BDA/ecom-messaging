@@ -3,6 +3,74 @@
 All notable changes to `@ecom/messaging` are recorded here. Versions follow
 `Documentation/8.Versioning.md`; `0.x` until the third adopter (ord-011).
 
+## 0.4.0
+
+The task half. Created for `cms-006`: the platform had `TASK_QUEUES`,
+`resizeImageJobSchema`, Terraform for the queues and a LocalStack init that
+creates them, but **no client** — `cms-svc` published `media.tasks` on the Kafka
+bus instead. This is that client.
+
+### Added
+
+- `TaskQueuePort` / `TaskWorkerPort` and their data types (`TaskDraft`,
+  `TaskDelivery`, `TaskHandler`, `PayloadParser`, `TaskQueue`) in
+  `src/tasks/task-queue.port.ts`. The ports take a `TASK_QUEUES` **entry** rather
+  than a string, so a typo is a type error and the worker reads
+  `visibilityTimeoutSeconds` from the same place the queue was created from.
+- `SqsTaskQueue` — validates the envelope with `taskMessageSchema` before it
+  sends, which catches the one mistake types cannot: a hand-built message whose
+  `queue`/`type`/`idempotencyKey` disagrees with what the worker will check.
+- `SqsTaskWorker` — long poll (20 s, batch 10), `delete` only after the handler
+  resolves, no delete on failure. The DLQ is the queue's own redrive policy after
+  `maxReceiveCount`, not a publisher here.
+- `SqsQueueUrls` — `GetQueueUrl` once per queue, cached, with a `queueUrls`
+  override for a deployment that forbids the call. A failed lookup is not
+  cached.
+- `createSqsTaskModule` (`@ecom/messaging/nest`) — starts and stops the poller
+  through the Nest lifecycle, and registers no worker at all when
+  `SQS_TASKS_ENABLED=false` or `NODE_ENV=test`. A handler is either a value or a
+  `handlerToken` exported by one of `imports`, because a dynamic module cannot
+  see the providers of the module that imports it — which is every handler that
+  needs a database or a storage port.
+- Narrow entry points `@ecom/messaging/nest/tasks` and
+  `@ecom/messaging/nest/outbox`. The `/nest` barrel also re-exports
+  `createKafkaConsumerStrategy`, which imports `@nestjs/microservices` eagerly,
+  so a service that has no Kafka consumer (cms-svc after `cms-006`) could not
+  import the outbox or task module without installing the Kafka transport. Both
+  narrow entries are re-exported from `/nest`, so an existing import keeps
+  working unchanged.
+- `@aws-sdk/client-sqs` as an **optional** peer dependency, the same way
+  `kafkajs` and `@nestjs/microservices` already are.
+
+### Changed
+
+- `SQS_TASKS_ENABLED` now wins over `NODE_ENV` in both directions. It used to be
+  a kill switch only, which made the one suite that owns a real queue
+  (`cms-svc/test/media-resize.e2e-spec.ts`) impossible to enable without faking
+  `NODE_ENV`.
+- `@ecom/contracts` dev dependency moves to `1.11.0` (the tarball that carries
+  `taskMessageSchema`). The peer range `>=1.9.0 <2` already admitted it, so no
+  consumer has to re-pin because of this release.
+
+### Decisions
+
+- **Delete-after-success, never a hand-rolled DLQ.** An SQS queue's redrive
+  policy *is* the dead-letter path, and Terraform and the LocalStack init
+  already configure it. A `dlqReason` publisher in the worker would be a second
+  source of truth for the same five attempts. Rejected: mirroring the Kafka
+  `KafkaEventHandler` model, where the transport must own the dead letter because
+  Kafka has no redrive.
+- **A malformed message is redelivered, not deleted.** It cannot succeed, but
+  deleting it destroys the only evidence; five receives put it in the DLQ where
+  a human looks. Rejected: deleting on `invalid` to keep the DLQ clean.
+- **Sequential processing.** One message at a time per pod bounds memory on a
+  1 GB box where each job is a `sharp` decode of a full-size image. Concurrency
+  arrives by adding pods, which SQS supports natively. Rejected: an in-process
+  worker pool sized by CPU count.
+- **`PayloadParser` is structural, not `z.ZodType`.** This package still has no
+  zod dependency, and a test can pass a three-line stub. Rejected: importing
+  `zod` for one `parse` signature.
+
 ## 0.3.0
 
 The consumer half. Created for `srch-002` (search-svc migrates its raw kafkajs

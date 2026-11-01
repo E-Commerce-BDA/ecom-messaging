@@ -1,6 +1,6 @@
 {
   "name": "@ecom/messaging",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Transactional outbox relay, event publishers and Kafka consumers shared by every E-Commerce service",
   "license": "UNLICENSED",
@@ -19,6 +19,14 @@
     "./nest": {
       "types": "./dist/nest/index.d.ts",
       "import": "./dist/nest/index.js"
+    },
+    "./nest/outbox": {
+      "types": "./dist/nest/outbox.module.d.ts",
+      "import": "./dist/nest/outbox.module.js"
+    },
+    "./nest/tasks": {
+      "types": "./dist/nest/tasks.module.d.ts",
+      "import": "./dist/nest/tasks.module.js"
     }
   },
   "files": [
@@ -35,12 +43,16 @@
     "prepack": "pnpm build"
   },
   "peerDependencies": {
+    "@aws-sdk/client-sqs": "^3.1100.0",
     "@ecom/contracts": ">=1.9.0 <2",
     "@nestjs/common": "^12.0.1",
     "@nestjs/microservices": "^12.0.1",
     "kafkajs": "^2.2.4"
   },
   "peerDependenciesMeta": {
+    "@aws-sdk/client-sqs": {
+      "optional": true
+    },
     "@nestjs/common": {
       "optional": true
     },
@@ -52,7 +64,8 @@
     }
   },
   "devDependencies": {
-    "@ecom/contracts": "file:../ecom-contracts/ecom-contracts-1.9.0.tgz",
+    "@aws-sdk/client-sqs": "^3.1161.0",
+    "@ecom/contracts": "file:../ecom-contracts/ecom-contracts-1.11.0.tgz",
     "@nestjs/common": "^12.0.1",
     "@nestjs/microservices": "^12.0.1",
     "@types/node": "^24.0.0",

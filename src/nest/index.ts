@@ -1,4 +1,5 @@
 export * from "./outbox.module.js";
+export * from "./tasks.module.js";
 
 // The consumer surface. `KafkaEventHandler` and `createKafkaConsumerStrategy`
 // are here rather than in the root because both only make sense next to

@@ -1,18 +1,21 @@
 # @ecom/messaging
 
-Transactional outbox relay, the Kafka publishers, and the Kafka consumer
-protocol shared by every E-Commerce service. One implementation of the
-claim/lease/retry loop instead of one per service — and, since `0.3.0`, one
-implementation of "read a record, apply it, dead-letter it if you must, then
-commit" instead of one per consumer.
+Transactional outbox relay, the Kafka publishers, the Kafka consumer protocol
+and — since `0.4.0` — the SQS task queue, shared by every E-Commerce service.
+One implementation of the claim/lease/retry loop instead of one per service,
+one implementation of "read a record, apply it, dead-letter it if you must, then
+commit" instead of one per consumer, and one implementation of "receive a task,
+do it, delete it" instead of one per worker.
 
 `0.x` is deliberate: the API stabilises at `1.0.0` once a third service adopts
 the outbox (`ord-011`). The consumer surface shipped in `0.3.0` and is now what
-`cart-svc`, `catalog-svc` and `search-svc` all run.
+`cart-svc`, `catalog-svc` and `search-svc` all run; the task surface shipped in
+`0.4.0` for `cms-006`.
 
-Two stores implement one port: `PostgresOutboxStore` and `MongoOutboxStore`.
-Everything above the claim — the relay, the envelope builder, the retry policy,
-the Kafka publisher — is shared, so a service picks a database, not a design.
+Two stores implement one outbox port: `PostgresOutboxStore` and
+`MongoOutboxStore`. Everything above the claim — the relay, the envelope builder,
+the retry policy, the Kafka publisher — is shared, so a service picks a
+database, not a design.
 
 ## What it guarantees
 
@@ -183,6 +186,82 @@ A consumer that needs lag exposes `KafkaLagSampler` on its stats endpoint —
 `start(15_000)` in `onModuleInit`, `latest()` on the request. The timer is
 unref'd.
 
+## Running tasks
+
+Kafka carries facts; SQS carries commands. A task is for exactly one worker, so
+it has no fan-out and no offset — and it has to survive a redrive, which is why
+`@ecom/contracts` 1.11.0 wraps every job in a `TaskMessage` with an
+`idempotencyKey`.
+
+```ts
+import { createSqsTaskModule, SQS_TASK_QUEUE } from "@ecom/messaging/nest/tasks";
+import type { TaskQueuePort, TaskHandler } from "@ecom/messaging";
+import { TASK_QUEUES, resizeImageJobSchema, type ResizeImageJob } from "@ecom/contracts";
+
+@Injectable()
+export class MediaTasksPublisher {
+  constructor(@Inject(SQS_TASK_QUEUE) private readonly tasks: TaskQueuePort) {}
+
+  enqueue(mediaId: string) {
+    return this.tasks.enqueue(TASK_QUEUES.mediaResizeImage, {
+      type: "media.resize-image",
+      // Identity of the effect, not of the send: a resend must not redo work.
+      idempotencyKey: mediaId,
+      payload: { mediaId, sourceKey: key, formats: ["webp"], widths: [320, 960] },
+    });
+  }
+}
+
+@Module({
+  imports: [
+    createSqsTaskModule<ResizeImageJob>({
+      queue: TASK_QUEUES.mediaResizeImage,
+      payloadSchema: resizeImageJobSchema,
+      handler: async (job, delivery) => {
+        await resizeAndPersist(job, delivery.message.idempotencyKey);
+      },
+    }),
+  ],
+})
+export class MediaModule {}
+```
+
+The module starts and stops the poller with the Nest lifecycle, and is compiled
+out of the application entirely when `SQS_TASKS_ENABLED=false` or
+`NODE_ENV=test` — so a suite that never started LocalStack has no poller to
+leak. An explicit `SQS_TASKS_ENABLED` wins over `NODE_ENV` in both directions,
+which is how the one suite that owns a real queue opts in. `AWS_REGION`,
+`AWS_ENDPOINT_URL` and the two credential variables are read by the SDK's own
+chain; the module takes no secrets.
+
+Two imports matter. `@ecom/messaging/nest/tasks` and `.../nest/outbox` exist
+because the `/nest` barrel also re-exports the Kafka consumer strategy, which
+imports `@nestjs/microservices` eagerly: a service that only produces — cms-svc
+after `cms-006` — should not need the Kafka transport to enqueue a command.
+
+A handler that needs injected dependencies is passed as a `handlerToken` rather
+than a function. A dynamic module cannot see the providers of the module that
+imports it, so the handler is provided by a module that is listed in `imports`;
+`MediaResizeModule` in cms-svc is the reference implementation.
+
+The four rules of the poller, in the order they matter:
+
+1. **Delete only after the handler resolves.** The delete is the ack.
+2. **Never delete on failure.** The message becomes visible again when its
+   visibility timeout expires, and the queue's redrive policy moves it to the
+   DLQ after `maxReceiveCount`. There is no DLQ publisher here on purpose:
+   `ecom-infra/aws/sqs.tf` and the LocalStack init already own that policy, and
+   a second copy would drift from it.
+3. **A malformed message is a failure, not a skip.** It cannot succeed on a
+   retry, but deleting it would destroy the only evidence — five receives put it
+   in the DLQ where a human looks.
+4. **One message at a time.** Processing is sequential per pod, so a `sharp`
+   worker on a 1 GB box cannot hold ten decodes at once. Scale out with pods;
+   SQS hands each visible message to exactly one receiver.
+
+`PayloadParser` is structural, not `z.ZodType`, which is why this package still
+has no zod dependency: a zod schema satisfies it as-is.
+
 ## What it is not
 
 - No scheduler, no service discovery, no routing layer. Each service decides
@@ -192,3 +271,6 @@ unref'd.
 - No schema knowledge beyond the envelope. The payload types come from
   `@ecom/contracts`, and `buildEventEnvelope` rejects an envelope whose
   `type`/`topic`/`eventType` disagree or whose payload drifted from its schema.
+- No queue creation and no redrive configuration. Terraform and the LocalStack
+  init own both; this package only reads `TASK_QUEUES` for the names and the
+  visibility timeout.
