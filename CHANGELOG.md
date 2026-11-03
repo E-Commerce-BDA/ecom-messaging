@@ -3,6 +3,58 @@
 All notable changes to `@ecom/messaging` are recorded here. Versions follow
 `Documentation/8.Versioning.md`; `0.x` until the third adopter (ord-011).
 
+## 0.5.0
+
+The retry ladder was sized against nothing. `srch-004` found a live consumer
+looping on one poisoned record: the five retries sleep 1+2+4+8+16 = **31s**, the
+Kafka session timeout was kafkajs's default **30s**, so the coordinator evicted
+the member mid-retry, `UNKNOWN_MEMBER_ID` then refused both the dead letter and
+the offset commit that waits on it, and the partition re-delivered the same
+record forever — every suite green, the service down.
+
+### Added
+
+- `createKafkaConsumerStrategy` now sets `consumer.sessionTimeout` and
+  `consumer.heartbeatInterval` instead of inheriting library defaults, with
+  `DEFAULT_SESSION_TIMEOUT_MS` (45 000) and `DEFAULT_HEARTBEAT_INTERVAL_MS`
+  (3 000) exported. Both are overridable per service. A heartbeat at or above the
+  session timeout is rejected at boot with both numbers in the message.
+- `KafkaEventHandler` option `retryBudgetMs` — an upper bound on the **total
+  sleep** of the ladder. When set, the ladder is truncated at construction to the
+  longest leading run of delays that fits, `maxRetries` follows it (an explicit
+  `maxRetries` is capped rather than allowed to repeat the last delay and
+  overshoot), the first delay is kept even if it alone exceeds the budget so a
+  transient error still retries at least once, and the cut is warned at boot
+  rather than applied silently.
+- `test/consumer/kafka-consumer.strategy.spec.ts` asserts the emitted session and
+  heartbeat pair and the boot guard; `kafka-event-handler.spec.ts` asserts the
+  truncation, the one-retry floor, the `maxRetries` cap, and that the dead letter
+  and commit still happen on a shortened ladder.
+- `@ecom/messaging/nest/consumer` and `@ecom/messaging/tasks` — narrow entries
+  for the consumer surface and the framework-free task surface. search-svc could
+  not repin to 0.4.0+ at all: `nest/index.ts` re-exports `tasks.module.js`, which
+  imports `@aws-sdk/client-sqs` at module scope, so a Kafka-only consumer with no
+  SQS failed at boot with `ERR_MODULE_NOT_FOUND` on an optional peer it never
+  calls. `src/index.ts` had the same shape from the other side.
+
+### Changed
+
+- The root barrel no longer re-exports `tasks/sqs-client`, `tasks/sqs-task-queue`
+  or `tasks/sqs-task-worker`; those moved to `@ecom/messaging/tasks`. This is a
+  removal from a public entry point and is called out rather than smoothed over.
+  It breaks nothing in the platform: `task-queue.port.js` (types only, no SDK
+  import) stays on the root, so cms-svc's `import type { TaskHandler,
+  TaskQueuePort } from '@ecom/messaging'` is untouched, and every SQS **value**
+  was already imported from `/nest/tasks`. Package-internal tests import from
+  `src/` paths.
+
+### Compatibility
+
+Behaviour with no options passed is unchanged, and only the session timeout
+moves — from 30s to 45s, which strictly _widens_ what a service can do, so no
+pinned consumer can regress. `cart-svc` and `catalog-svc` stay on 0.3.0 until
+their next wave; ADR 44 records the constraint they must meet when they move.
+
 ## 0.4.0
 
 The task half. Created for `cms-006`: the platform had `TASK_QUEUES`,

@@ -20,10 +20,10 @@ export * from "./consumer/lag.sampler.js";
 export * from "./consumer/consumer-metrics.js";
 export * from "./consumer/processed-events.store.js";
 
-// Task side. SQS is the command channel: no Nest type is needed for the port or
-// the two implementations, so they live here; `createSqsTaskModule` is on
-// `./nest` next to the outbox module.
+// Task side. Only the port is here: it is types and a queue-name table, so a
+// service can name `TaskHandler` or `TaskQueuePort` without the SQS SDK in its
+// tree. The implementations import `@aws-sdk/client-sqs` at module scope, and an
+// optional peer must not be loaded by an entry point that does not use it — they
+// are on `./tasks`, and `createSqsTaskModule` is on `./nest` next to the outbox
+// module.
 export * from "./tasks/task-queue.port.js";
-export * from "./tasks/sqs-client.js";
-export * from "./tasks/sqs-task-queue.js";
-export * from "./tasks/sqs-task-worker.js";

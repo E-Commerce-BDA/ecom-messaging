@@ -157,9 +157,18 @@ export class CartConsumerController {
 | `{ kind: "duplicate" }` | `duplicate` | committed | — |
 | `{ kind: "ignored", reason }` | `ignored` | committed | — |
 | `{ kind: "invalid", stage }` | `invalid` | committed **after** the dead letter | `invalid-envelope` / `invalid-payload` |
-| throws, retryable | — | retried `1/2/4/8/16s`, then committed after the dead letter | `transient-exhausted` |
+| throws, retryable | — | retried `1/2/4/8/16s` within `retryBudgetMs`, then committed after the dead letter | `transient-exhausted` |
 | throws, `translateError` returns a reason | — | committed after the dead letter | that reason |
 | malformed JSON | `invalid` | committed after the dead letter | `invalid-json` |
+
+**The ladder must fit inside the session.** The strategy sets
+`sessionTimeout` to `DEFAULT_SESSION_TIMEOUT_MS` (45s) rather than kafkajs's 30s
+default, because the five retries above sleep a total of 31s: a member still
+asleep when its session expires is evicted, and the coordinator then refuses both
+the dead letter and the offset commit that waits on it (`UNKNOWN_MEMBER_ID`), so
+the record is redelivered and retried forever. A service that wants a shorter
+session can pass `retryBudgetMs` to the handler, which truncates the ladder to the
+longest run of delays that fits and warns at boot about the cut.
 
 The claim goes inside the same transaction as the effect:
 
@@ -234,10 +243,17 @@ which is how the one suite that owns a real queue opts in. `AWS_REGION`,
 `AWS_ENDPOINT_URL` and the two credential variables are read by the SDK's own
 chain; the module takes no secrets.
 
-Two imports matter. `@ecom/messaging/nest/tasks` and `.../nest/outbox` exist
-because the `/nest` barrel also re-exports the Kafka consumer strategy, which
-imports `@nestjs/microservices` eagerly: a service that only produces — cms-svc
-after `cms-006` — should not need the Kafka transport to enqueue a command.
+Four narrow entries exist for one rule: **an entry point must not load a
+transport its service does not use.** `@ecom/messaging/nest/tasks` and
+`.../nest/outbox` came first, because the `/nest` barrel also re-exports the
+Kafka consumer strategy, which imports `@nestjs/microservices` eagerly — a
+service that only produces (cms-svc after `cms-006`) should not need the Kafka
+transport to enqueue a command. `.../nest/consumer` and `.../tasks` are the same
+rule pointing the other way, added in 0.5.0 because `tasks.module.js` imports
+`@aws-sdk/client-sqs` at module scope and search-svc consumes events without ever
+enqueueing one: an optional peer that is not installed must not be reachable from
+the entry a service does use. Each barrel still re-exports everything it did, so
+an existing import path keeps working for a service that has both peers.
 
 A handler that needs injected dependencies is passed as a `handlerToken` rather
 than a function. A dynamic module cannot see the providers of the module that

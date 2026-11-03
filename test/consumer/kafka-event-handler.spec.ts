@@ -18,7 +18,13 @@ const TOPIC = "order.created";
 const ENVELOPE = { id: "evt-1", type: TOPIC, payload: { orderId: "o-1" } };
 const RAW = JSON.stringify(ENVELOPE);
 
-function harness(options: { translateError?: (error: unknown) => string | null } = {}) {
+function harness(
+  options: {
+    translateError?: (error: unknown) => string | null;
+    retryBudgetMs?: number;
+    maxRetries?: number;
+  } = {},
+) {
   const dlq = new RecordingDlqPublisher();
   const metrics = new ConsumerMetrics(() => new Date("2026-10-31T12:00:00.000Z"));
   const logger = new SilentLogger();
@@ -29,6 +35,8 @@ function harness(options: { translateError?: (error: unknown) => string | null }
     logger,
     sleep: (ms) => sleeper.sleep(ms),
     translateError: options.translateError,
+    retryBudgetMs: options.retryBudgetMs,
+    maxRetries: options.maxRetries,
   });
 
   return { dlq, metrics, logger, sleeper, handler };
@@ -216,6 +224,67 @@ describe("KafkaEventHandler — retries", () => {
 
     expect(sleeper.waited).toEqual([1000, 2000, 4000, 8000, 16000]);
     expect(sleeper.waited).toHaveLength(5);
+  });
+
+  it("keeps the sleeps inside retryBudgetMs and warns that the ladder was cut", async () => {
+    const { handler, metrics, logger, sleeper, dlq } = harness({
+      retryBudgetMs: 20_000,
+    });
+    const { consumer, ctx } = context();
+    let calls = 0;
+
+    await handler.run(ctx, TOPIC, RAW, async () => {
+      calls += 1;
+      throw new Error("connection reset");
+    });
+
+    // 1+2+4+8 = 15s fits the budget; the 16s step would take the sleeps to 31s,
+    // longer than the 30s broker session kafkajs defaults to — and a member
+    // asleep past its session deadline can neither commit nor dead-letter.
+    expect(sleeper.waited).toEqual([1000, 2000, 4000, 8000]);
+    expect(calls).toBe(5);
+    expect(dlq.published[0]).toMatchObject({ reason: "transient-exhausted" });
+    expect(consumer.commits).toHaveLength(1);
+    expect(metrics.snapshot().dlq).toBe(1);
+    expect(
+      logger.lines.some(
+        (line) =>
+          line.level === "warn" && line.message.includes("Retry ladder bounded"),
+      ),
+    ).toBe(true);
+  });
+
+  it("still retries once when the budget cannot fit the first delay", async () => {
+    const { handler, sleeper, dlq } = harness({ retryBudgetMs: 500 });
+    const { ctx } = context();
+    let calls = 0;
+
+    await handler.run(ctx, TOPIC, RAW, async () => {
+      calls += 1;
+      throw new Error("connection reset");
+    });
+
+    // A budget so tight that it zeroes the ladder would dead-letter on the first
+    // attempt, which is not a retry policy anyone chose.
+    expect(sleeper.waited).toEqual([1000]);
+    expect(calls).toBe(2);
+    expect(dlq.published[0]).toMatchObject({ reason: "transient-exhausted" });
+  });
+
+  it("caps an explicit maxRetries at the truncated ladder", async () => {
+    const { handler, sleeper } = harness({
+      retryBudgetMs: 20_000,
+      maxRetries: 10,
+    });
+    const { ctx } = context();
+
+    await handler.run(ctx, TOPIC, RAW, async () => {
+      throw new Error("connection reset");
+    });
+
+    // More attempts than sleeps would repeat the last delay and overshoot the
+    // bound the budget exists to hold.
+    expect(sleeper.waited).toEqual([1000, 2000, 4000, 8000]);
   });
 
   it("dead-letters transient-exhausted and commits only after the DLQ write", async () => {

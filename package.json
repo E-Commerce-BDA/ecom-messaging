@@ -1,6 +1,6 @@
 {
   "name": "@ecom/messaging",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Transactional outbox relay, event publishers and Kafka consumers shared by every E-Commerce service",
   "license": "UNLICENSED",
@@ -20,6 +20,10 @@
       "types": "./dist/nest/index.d.ts",
       "import": "./dist/nest/index.js"
     },
+    "./nest/consumer": {
+      "types": "./dist/nest/consumer.d.ts",
+      "import": "./dist/nest/consumer.js"
+    },
     "./nest/outbox": {
       "types": "./dist/nest/outbox.module.d.ts",
       "import": "./dist/nest/outbox.module.js"
@@ -27,6 +31,10 @@
     "./nest/tasks": {
       "types": "./dist/nest/tasks.module.d.ts",
       "import": "./dist/nest/tasks.module.js"
+    },
+    "./tasks": {
+      "types": "./dist/tasks/index.d.ts",
+      "import": "./dist/tasks/index.js"
     }
   },
   "files": [

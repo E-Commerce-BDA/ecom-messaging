@@ -36,6 +36,21 @@ export interface KafkaEventHandlerOptions {
   retryDelaysMs?: number[];
   maxRetries?: number;
   /**
+   * Upper bound on the **total sleep** of the retry ladder, in ms.
+   *
+   * A Kafka member that is still sleeping when its broker session expires is
+   * evicted, and the coordinator then refuses both its offset commit
+   * (`UNKNOWN_MEMBER_ID`) and the dead-letter write that commit waits on — so
+   * the record is redelivered and retried forever. The ladder has to fit inside
+   * `sessionTimeout` (see `DEFAULT_SESSION_TIMEOUT_MS` on the strategy) with
+   * room for the handler attempts themselves.
+   *
+   * When set, the ladder is truncated at construction to the longest leading run
+   * of delays whose sum fits the budget, and `maxRetries` follows it. When
+   * omitted the ladder runs exactly as configured.
+   */
+  retryBudgetMs?: number;
+  /**
    * Maps a thrown error to a terminal DLQ reason, or `null` for "retryable".
    *
    * Lets a service dead-letter a domain failure it knows cannot be repaired by
@@ -83,8 +98,32 @@ export class KafkaEventHandler {
     this.dlq = options.dlq;
     this.metrics = options.metrics ?? new ConsumerMetrics();
     this.logger = options.logger ?? new ConsoleRelayLogger("consumer");
-    this.retryDelaysMs = options.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS;
-    this.maxRetries = options.maxRetries ?? this.retryDelaysMs.length;
+
+    const requested = options.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS;
+    const ladder = boundRetryLadder(requested, options.retryBudgetMs);
+    this.retryDelaysMs = ladder.delays;
+
+    // Without a budget, `maxRetries` keeps its own meaning and may exceed the
+    // delay list (the loop then repeats the last delay). With a budget, more
+    // attempts than sleeps would overshoot the very bound it exists to enforce.
+    if (options.maxRetries === undefined) {
+      this.maxRetries = this.retryDelaysMs.length;
+    } else if (options.retryBudgetMs === undefined) {
+      this.maxRetries = options.maxRetries;
+    } else {
+      this.maxRetries = Math.min(options.maxRetries, this.retryDelaysMs.length);
+    }
+
+    // Said out loud once at boot: a ladder that is smaller than the one the
+    // service asked for must not be a silent behaviour change.
+    if (ladder.budgetedTo !== undefined) {
+      this.logger.warn(
+        `Retry ladder bounded to ${ladder.budgetedTo}ms of sleeps: ` +
+          `${requested.length} configured delays reduced to ` +
+          `${this.retryDelaysMs.join("/")} (${this.maxRetries} retries).`,
+      );
+    }
+
     this.translateError = options.translateError ?? (() => null);
     this.sleep = options.sleep ?? sleep;
   }
@@ -291,6 +330,40 @@ export class KafkaEventHandler {
 
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Truncate `delays` to the longest leading run whose sum fits `budgetMs`.
+ *
+ * Returns the ladder together with the budget it was fitted to — `undefined`
+ * when no budget was given — so the caller can report a shortened ladder instead
+ * of quietly running one.
+ */
+function boundRetryLadder(
+  delays: number[],
+  budgetMs?: number,
+): { delays: number[]; budgetedTo?: number } {
+  if (budgetMs === undefined) {
+    return { delays };
+  }
+
+  const kept: number[] = [];
+  let total = 0;
+  for (const delay of delays) {
+    if (total + delay > budgetMs) {
+      break;
+    }
+    total += delay;
+    kept.push(delay);
+  }
+
+  // Zero sleeps means zero retries: a transient error would be dead-lettered on
+  // the first attempt, which is the wrong reading of a budget that is merely
+  // tight. Keep the first delay and let the budget be a stated trade-off.
+  return {
+    delays: kept.length > 0 ? kept : delays.slice(0, 1),
+    budgetedTo: budgetMs,
+  };
 }
 
 function sleep(ms: number): Promise<void> {
