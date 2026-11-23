@@ -6,7 +6,6 @@ import type {
 } from "../../src/consumer/types.js";
 import type { DlqPublishInput } from "../../src/consumer/dlq.publisher.js";
 
-/** Records every `commitOffsets` call, in order. */
 export class FakeConsumer implements KafkaConsumerLike {
   readonly commits: { topic: string; partition: number; offset: string }[] = [];
 

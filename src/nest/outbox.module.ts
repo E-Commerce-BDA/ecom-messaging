@@ -21,13 +21,10 @@ export const OUTBOX_PUBLISHER = Symbol("OUTBOX_PUBLISHER");
 export const OUTBOX_RELAY = Symbol("OUTBOX_RELAY");
 
 export interface OutboxModuleOptions {
-  /** Schema that owns the outbox table: `auth`, `cart`, `catalog` or `order`. */
   schema: string;
-  /** Value written into `envelope.producer`, e.g. `auth-svc`. */
   producer: string;
   clientId: string;
   pool: () => PoolLike;
-  /** Defaults to `KAFKA_BROKERS` or `localhost:9092`. */
   brokers?: () => string[];
   logger?: RelayLogger;
   /**
@@ -38,18 +35,13 @@ export interface OutboxModuleOptions {
 }
 
 export interface MongoOutboxModuleOptions {
-  /** Collection that holds the events, e.g. `cms_outbox`. */
   collection: string;
-  /** Value written into `envelope.producer`, e.g. `cms-svc`. */
   producer: string;
   clientId: string;
   /** Structural access to the database, normally `() => connection.db`. */
   db: () => MongoOutboxDb;
-  /** Defaults to `<collection>_locks`. */
   lockCollection?: string;
-  /** How long the relay lease lasts. Default 30 s. */
   lockLeaseSeconds?: number;
-  /** Defaults to `KAFKA_BROKERS` or `localhost:9092`. */
   brokers?: () => string[];
   logger?: RelayLogger;
   enabled?: () => boolean;
@@ -110,7 +102,6 @@ export class OutboxInitializer implements OnModuleInit {
 export class OutboxModule {}
 
 interface SharedModuleOptions {
-  /** Log prefix, e.g. `outbox:cart`. */
   label: string;
   clientId: string;
   brokers?: () => string[];

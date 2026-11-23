@@ -15,13 +15,9 @@ import type {
 const IDENTIFIER_PATTERN = /^[a-z_][a-z0-9_]{0,62}$/;
 
 export interface PostgresOutboxStoreOptions {
-  /** Structural pool accessor, normally the service's own `getPool`. */
   pool: () => PoolLike;
-  /** Schema that owns the table: `auth` or `cart`. */
   schema: string;
-  /** Value written into `envelope.producer`. */
   producer: string;
-  /** Defaults to `outbox`. */
   table?: string;
 }
 

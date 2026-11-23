@@ -6,7 +6,6 @@ import {
 import { SilentLogger } from "./fakes.js";
 
 class FakeAdmin implements KafkaAdminLike {
-  /** topic → partition → high watermark */
   readonly ends: Record<string, { partition: number; offset: string }[]> = {};
   /** topic → partition → committed offset, as kafkajs reports it (`-1` = none). */
   readonly committed: Record<string, { partition: number; offset: string }[]> = {};

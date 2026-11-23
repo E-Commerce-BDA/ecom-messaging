@@ -17,7 +17,6 @@ function eventId(n: number): string {
 
 type Doc = MongoOutboxDocument;
 
-/** Applies the subset of Mongo update syntax the store is allowed to use. */
 function applyUpdate(doc: Doc, update: MongoUpdateLike): Doc {
   const stages = Array.isArray(update) ? update : [update];
   let next: Record<string, unknown> = { ...doc };
@@ -38,7 +37,6 @@ function setOf(update: MongoUpdateLike): Record<string, unknown> {
   return (stage as { $set?: Record<string, unknown> }).$set ?? {};
 }
 
-/** Resolves the aggregation expressions the store uses (`$add`, `$cond`, `$gte`). */
 function evaluate(expression: unknown, doc: Record<string, unknown>): unknown {
   if (!expression || typeof expression !== "object" || Array.isArray(expression)) {
     return expression;

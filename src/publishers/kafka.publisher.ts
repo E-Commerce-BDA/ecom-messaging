@@ -3,7 +3,6 @@ import { ConsoleRelayLogger, type RelayLogger } from "../logger.js";
 import type { PublishInput, PublisherPort } from "./publisher.port.js";
 
 export interface KafkaPublisherOptions {
-  /** Read lazily so `KAFKA_BROKERS` is resolved after config is loaded. */
   brokers: () => string[];
   clientId: string;
   logger?: RelayLogger;

@@ -12,15 +12,11 @@ export interface OutboxRelayOptions {
   store: OutboxStorePort<never>;
   publisher: PublisherPort;
   logger?: RelayLogger;
-  /** Rows claimed per cycle. Default 20. */
   batchSize?: number;
-  /** Idle poll interval. Default 2000 ms. */
   intervalMs?: number;
   /** How long a claimed row stays invisible to other workers. Default 30 s. */
   leaseSeconds?: number;
-  /** Attempts before a row is parked as `failed`. Default 5 (SQS parity). */
   maxAttempts?: number;
-  /** Delay before the next attempt; default `min(2 ** attempts, 60)` seconds. */
   backoffSeconds?: (attempts: number) => number;
 }
 
@@ -98,7 +94,6 @@ export class OutboxRelay {
 
   /** One drain cycle. Public so tests drive the relay without a timer. */
   async drainOnce(): Promise<DrainResult> {
-    // The relay lease must outlive a whole drain: a lease that expires mid-batch
     // lets a second worker start, which is the one way ordering can break.
     // Postgres takes a real advisory lock and ignores the hint.
     const release = await this.store.tryAcquireRelayLock(this.leaseSeconds * 4);

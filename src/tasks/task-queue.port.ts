@@ -1,13 +1,6 @@
 import type { TaskMessage, TASK_QUEUES } from "@ecom/contracts";
 
-/**
- * One entry of `TASK_QUEUES` — the queue, its DLQ twin and its timing.
- *
- * Ports take this entry rather than a bare string for two reasons: the name can
- * only come from the registry (so a typo is a type error instead of a `QueueDoesNotExist`
- * at runtime), and the worker needs `visibilityTimeoutSeconds` from the same
- * place the queue was created from.
- */
+// ADR-events: ports take registry entries (see Documentation/ARCHITECTURE_DECISIONS.md)
 export type TaskQueue = (typeof TASK_QUEUES)[keyof typeof TASK_QUEUES];
 
 /**
@@ -19,7 +12,6 @@ export type TaskQueue = (typeof TASK_QUEUES)[keyof typeof TASK_QUEUES];
  * the worker would only reject after it had already paid for the receive.
  */
 export interface TaskDraft<P = unknown> {
-  /** Dotted job name inside the queue, e.g. `media.resize-image`. */
   type: string;
   /**
    * Identity of the *effect*, not of the send. A re-drive and a retry keep it,
@@ -48,17 +40,13 @@ export interface TaskQueuePort {
    */
   enqueue<P>(queue: TaskQueue, draft: TaskDraft<P>): Promise<TaskMessage>;
 
-  /** The queue URL, resolved once and cached. Exposed for diagnostics. */
   urlFor(queue: TaskQueue): Promise<string>;
 }
 
-/** What the handler is told about the delivery it is serving. */
 export interface TaskDelivery {
-  /** SQS `MessageId` — one per delivery, not per effect. */
   messageId: string;
   /** `ApproximateReceiveCount`: 1 on the first attempt, 5 on the last. */
   receiveCount: number;
-  /** The validated envelope, including `idempotencyKey`. */
   message: TaskMessage;
 }
 

@@ -5,23 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'src');
 
-/**
- * Entry-point reachability.                                       `srch-004` / 0.5.0
- *
- * `@ecom/messaging` has three optional peers, and a service installs the ones its
- * transports need. An eager re-export of a module that imports a peer at module
- * scope therefore makes that peer mandatory for anyone who touches the entry —
- * which is how search-svc came to be unable to repin: `/nest` re-exported
- * `tasks.module.js`, `tasks.module.js` imports `@aws-sdk/client-sqs`, and a
- * Kafka-only consumer died at boot on `ERR_MODULE_NOT_FOUND`.
- *
- * These cases read the source graph instead of importing it, because the whole
- * point is what a file loads before its first statement runs — and because the
- * package's own dev dependencies install every peer, so an import would succeed
- * here and fail in a service.
- */
 
-/** Every `src/` module reachable from `entry` through relative `import`/`export *`. */
 function reachable(entry: string, seen = new Set<string>()): Set<string> {
   if (seen.has(entry)) {
     return seen;
@@ -56,7 +40,6 @@ const exists = (path: string): boolean => {
   }
 };
 
-/** Bare (non-relative) specifiers the reachable set imports or re-exports. */
 function peersOf(entry: string): string[] {
   const peers = new Set<string>();
 

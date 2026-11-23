@@ -34,7 +34,6 @@ export interface PoolLike extends Queryable {
  * handed back to the driver matters here.
  */
 export interface MongoSessionLike {
-  /** Present on every driver session; keeps the type from accepting anything. */
   readonly id?: unknown;
 }
 
@@ -54,7 +53,6 @@ export interface MongoCreateIndexOptionsLike {
   partialFilterExpression?: Record<string, unknown>;
 }
 
-/** `{$set: ...}` document or an aggregation pipeline (`[{ $set: ... }]`). */
 export type MongoUpdateLike =
   | Record<string, unknown>
   | readonly Record<string, unknown>[];
@@ -101,7 +99,6 @@ export interface MongoOutboxDb {
   collection(name: string): MongoCollectionLike<MongoOutboxDocument>;
 }
 
-/** A claimed outbox row, exactly as the relay needs it. */
 export interface OutboxRow {
   id: string;
   event_id: string;
@@ -132,7 +129,6 @@ export type MarkFailedResult = {
   status: "pending" | "failed";
 };
 
-/** Release the exclusive relay lock. Idempotent. */
 export type RelayLockRelease = () => Promise<void>;
 
 /**

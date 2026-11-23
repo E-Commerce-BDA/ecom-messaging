@@ -1,11 +1,3 @@
-/**
- * The wire-facing half of a Kafka message, as kafkajs hands it to
- * `eachMessage`.
- *
- * Only `offset` is required: it is the one field the commit protocol cannot do
- * without. A test can therefore build a message with three fields, and a
- * service never has to reproduce kafkajs' full `KafkaMessage` type.
- */
 export interface KafkaMessageLike {
   offset: string;
   key?: Buffer | string | null;
@@ -67,7 +59,6 @@ export type KafkaHandlerOutcome =
    * delivery, so the offset is safe to advance.
    */
   | { kind: "duplicate"; eventId?: string }
-  /** Well-formed, but not something this consumer acts on. Logged, committed. */
   | { kind: "ignored"; reason: string; type?: string }
   /**
    * Unreadable. Dead-lettered *before* the offset moves, so a record is never
@@ -75,5 +66,4 @@ export type KafkaHandlerOutcome =
    */
   | { kind: "invalid"; stage: "envelope" | "payload"; error: string };
 
-/** One event, already JSON-parsed. */
 export type KafkaHandlerFn = (envelope: unknown) => Promise<KafkaHandlerOutcome>;

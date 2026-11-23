@@ -2,19 +2,11 @@ import { GetQueueUrlCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { ConsoleRelayLogger, type RelayLogger } from "../logger.js";
 import type { TaskQueue } from "./task-queue.port.js";
 
-/**
- * The two `send` calls this package makes, behind one structural type.
- *
- * `SQSClient` satisfies it as-is (a class method is bivariant in its parameter),
- * so production code passes the real client and a test passes a stub that
- * records commands — no casting, and no `any` leaking into the worker.
- */
 export interface SqsClientLike {
   send(command: object): Promise<unknown>;
 }
 
 export interface SqsClientOptions {
-  /** Defaults to `AWS_REGION`, then `us-east-1`; read by `SQSClient` itself. */
   region?: string;
   /**
    * LocalStack. `SQSClient` reads `AWS_ENDPOINT_URL` on its own, so this is

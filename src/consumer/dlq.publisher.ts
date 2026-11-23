@@ -14,7 +14,6 @@ export function dlqTopicNameFor(topic: string): string {
   return isEventTopic(topic) ? dlqTopicName(topic) : `${topic}.dlq`;
 }
 
-/** Where the record came from, written into the DLQ payload verbatim. */
 export interface DlqSource {
   topic: string;
   partition: number;
@@ -23,10 +22,8 @@ export interface DlqSource {
 
 export interface DlqPublishInput {
   source: DlqSource;
-  /** Machine-readable reason. Service-specific values are allowed. */
   reason: string;
   error: string;
-  /** Present for `invalid-json`, where there is no parsed envelope to keep. */
   rawValue?: string;
   /** Present when the body parsed but was rejected or failed downstream. */
   originalPayload?: unknown;
@@ -51,7 +48,6 @@ export interface KafkaDlqPublisherOptions {
   brokers: string[];
   clientId: string;
   producer?: KafkaProducerLike;
-  /** Injectable for deterministic `failedAt` in tests. */
   clock?: () => Date;
 }
 

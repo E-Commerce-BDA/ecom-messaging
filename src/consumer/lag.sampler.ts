@@ -1,14 +1,12 @@
 import { Kafka } from "kafkajs";
 import { ConsoleRelayLogger, type RelayLogger } from "../logger.js";
 
-/** Latest producer offset for one partition. */
 export interface TopicOffsetLike {
   partition: number;
   /** High watermark, i.e. the next offset a producer would write. */
   offset: string;
 }
 
-/** Where a group got to in one partition of one topic. */
 export interface GroupOffsetLike {
   topic: string;
   partitions: { partition: number; offset: string }[];

@@ -14,7 +14,6 @@ export const DEFAULT_SESSION_TIMEOUT_MS = 45_000;
 export const DEFAULT_HEARTBEAT_INTERVAL_MS = 3_000;
 
 export interface KafkaConsumerStrategyOptions {
-  /** `KAFKA_BROKERS`, split on commas. */
   brokers: string[];
   clientId: string;
   /**

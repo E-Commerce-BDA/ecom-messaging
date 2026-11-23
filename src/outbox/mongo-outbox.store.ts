@@ -15,15 +15,11 @@ import type {
 } from "./types.js";
 
 export interface MongoOutboxStoreOptions {
-  /** Structural access to the database, normally `() => connection.db`. */
   db: () => MongoOutboxDb;
-  /** Collection that holds the events. Defaults to `outbox`. */
   collection?: string;
-  /** Value written into `envelope.producer`. */
   producer: string;
   /** Collection that holds the relay lease. Defaults to `<collection>_locks`. */
   lockCollection?: string;
-  /** How long a relay lease lasts. Default 30 s. */
   lockLeaseSeconds?: number;
 }
 

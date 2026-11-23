@@ -1,4 +1,3 @@
-/** Minimal logger surface the relay and publishers accept. */
 export interface RelayLogger {
   debug(message: string): void;
   warn(message: string): void;
@@ -25,7 +24,6 @@ export class ConsoleRelayLogger implements RelayLogger {
   }
 }
 
-/** Collects log lines so tests can assert on them. */
 export class RecordingLogger implements RelayLogger {
   readonly lines: { level: keyof RelayLogger; message: string }[] = [];
 

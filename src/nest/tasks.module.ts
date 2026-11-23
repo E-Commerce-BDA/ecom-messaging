@@ -26,7 +26,6 @@ export const SQS_TASK_QUEUE = Symbol("SQS_TASK_QUEUE");
 export const SQS_TASK_WORKER = Symbol("SQS_TASK_WORKER");
 
 export interface SqsTaskModuleOptions<P = unknown> {
-  /** The `TASK_QUEUES` entry this module owns. One module per queue. */
   queue: TaskQueue;
   /**
    * The job, as a value. Resolving deletes the message; throwing leaves it for
@@ -43,18 +42,15 @@ export interface SqsTaskModuleOptions<P = unknown> {
    * cms-svc is the working example.
    */
   handlerToken?: InjectionToken;
-  /** Modules that export `handlerToken`. Ignored when `handler` is a value. */
   imports?: DynamicModule["imports"];
   /**
    * `resizeImageJobSchema`-style parser for `message.payload`. Without it the
    * handler receives `unknown`.
    */
   payloadSchema?: PayloadParser<P>;
-  /** Supply one to share a client between the producer and the worker. */
   client?: SqsClientLike;
   region?: string;
   endpoint?: string;
-  /** Pre-resolved queue URLs, keyed by queue name, to skip `GetQueueUrl`. */
   queueUrls?: Partial<Record<string, string>>;
   logger?: RelayLogger;
   waitTimeSeconds?: number;

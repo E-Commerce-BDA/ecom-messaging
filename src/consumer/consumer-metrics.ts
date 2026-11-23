@@ -33,11 +33,9 @@ const COUNTERS: readonly ConsumerCounter[] = [
   "stalled",
 ];
 
-/** Where the group got to last. What a lag dashboard reads next to the lag. */
 export interface ConsumerCommitMark {
   topic: string;
   partition: number;
-  /** The committed offset: the message offset, i.e. the next one to read. */
   offset: string;
   committedAt: string;
 }

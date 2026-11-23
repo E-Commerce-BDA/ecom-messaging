@@ -6,13 +6,6 @@ import {
   DEFAULT_SESSION_TIMEOUT_MS,
 } from "../../src/consumer/kafka-consumer.strategy.js";
 
-/**
- * These assertions reach into `ServerKafka`'s own fields on purpose. Each of
- * the three is a silent-failure switch: get it wrong and the consumer looks
- * healthy while using a second group, auto-committing before the side effect,
- * or hiding malformed JSON from the DLQ. A test that only checked "it built" 
- * would pass in all three failure modes.
- */
 function internals(strategy: ServerKafka) {
   return strategy as unknown as {
     groupId: string;

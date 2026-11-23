@@ -4,9 +4,7 @@ import type { Queryable } from "../outbox/types.js";
 const IDENTIFIER_PATTERN = /^[a-z_][a-z0-9_]{0,62}$/;
 
 export interface ProcessedEventsStoreOptions {
-  /** Schema that owns the table: `search`, `catalog`, `cart`. */
   schema: string;
-  /** Defaults to `processed_events`. */
   table?: string;
 }
 

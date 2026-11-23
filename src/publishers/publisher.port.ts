@@ -2,7 +2,6 @@ import type { EventEnvelope, EventTopic } from "@ecom/contracts";
 
 export interface PublishInput {
   topic: EventTopic;
-  /** Kafka partition key: the aggregate id (`userId`, `cartId`, …). */
   key: string;
   envelope: EventEnvelope;
 }

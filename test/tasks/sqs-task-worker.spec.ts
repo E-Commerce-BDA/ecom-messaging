@@ -124,7 +124,6 @@ function build(
   };
 }
 
-/** Starts the poller, waits for the batch to drain, stops it. */
 async function drain(
   client: StubSqs,
   handler: TaskHandler<ResizeImageJob>,

@@ -23,10 +23,8 @@ export interface SqsTaskWorkerOptions<P = unknown> {
    */
   payloadSchema?: PayloadParser<P>;
   logger?: RelayLogger;
-  /** Long poll. 20 s is the SQS maximum and the cheapest way to be idle. */
   waitTimeSeconds?: number;
   maxMessages?: number;
-  /** Backoff after a failed `ReceiveMessage`. Default 1 s, doubling to 30 s. */
   errorBackoffMs?: number;
 }
 

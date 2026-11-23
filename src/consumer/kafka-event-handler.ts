@@ -50,13 +50,7 @@ export interface KafkaEventHandlerOptions {
    * omitted the ladder runs exactly as configured.
    */
   retryBudgetMs?: number;
-  /**
-   * Maps a thrown error to a terminal DLQ reason, or `null` for "retryable".
-   *
-   * Lets a service dead-letter a domain failure it knows cannot be repaired by
-   * redelivery (a closed reservation, a conflicting sku) immediately instead of
-   * burning the 31 seconds of the retry ladder first.
-   */
+  // ADR-events: translateError for terminal failures (see Documentation/ARCHITECTURE_DECISIONS.md)
   translateError?: (error: unknown) => string | null;
   /** Injectable so a test can run the whole ladder without waiting 31s. */
   sleep?: (ms: number) => Promise<void>;
@@ -128,18 +122,11 @@ export class KafkaEventHandler {
     this.sleep = options.sleep ?? sleep;
   }
 
-  /** Counters and the last commit. Handed to the service's stats endpoint. */
   get counters(): ConsumerMetrics {
     return this.metrics;
   }
 
-  /**
-   * Handles one record from a `@EventPattern` method or an `eachMessage` loop.
-   *
-   * `topic` is passed rather than read from the context so a mistyped
-   * `@EventPattern` shows up as a wrong DLQ name in the tests instead of being
-   * silently "correct", and so the same call works from a hand-rolled loop.
-   */
+  // ADR-events: translateError for terminal failures (see Documentation/ARCHITECTURE_DECISIONS.md)
   async run(
     ctx: KafkaMessageContextLike,
     topic: string,
