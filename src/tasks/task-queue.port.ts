@@ -72,6 +72,5 @@ export interface TaskWorkerPort<P = unknown> {
    */
   run(handler: TaskHandler<P>): void;
 
-  /** Stop polling and wait for the in-flight batch to finish. */
   stop(): Promise<void>;
 }

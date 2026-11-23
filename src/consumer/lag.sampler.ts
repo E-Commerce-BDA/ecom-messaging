@@ -30,7 +30,6 @@ export interface KafkaAdminLike {
 }
 
 export interface LagSample {
-  /** Uncommitted records per topic, summed across partitions. */
   lag: Record<string, number>;
   totalLag: number;
   sampledAt: string;
@@ -95,7 +94,6 @@ export class KafkaLagSampler {
       }).admin();
   }
 
-  /** One sample. Throws if the admin client cannot be reached. */
   async sample(): Promise<LagSample> {
     const lag: Record<string, number> = {};
 
@@ -140,7 +138,6 @@ export class KafkaLagSampler {
     this.timer.unref();
   }
 
-  /** The last successful sample, or `null` before the first one. */
   latest(): LagSample | null {
     return this.latestSample;
   }

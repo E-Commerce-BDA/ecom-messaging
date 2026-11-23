@@ -43,10 +43,6 @@ export interface SqsTaskModuleOptions<P = unknown> {
    */
   handlerToken?: InjectionToken;
   imports?: DynamicModule["imports"];
-  /**
-   * `resizeImageJobSchema`-style parser for `message.payload`. Without it the
-   * handler receives `unknown`.
-   */
   payloadSchema?: PayloadParser<P>;
   client?: SqsClientLike;
   region?: string;

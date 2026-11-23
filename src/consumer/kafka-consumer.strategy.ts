@@ -22,7 +22,6 @@ export interface KafkaConsumerStrategyOptions {
    * `-server` by default and would silently create a second group.
    */
   groupId: string;
-  /** Replay from the beginning of the topic. Off by default, as before. */
   fromBeginning?: boolean;
   /**
    * Broker session timeout. Defaults to `DEFAULT_SESSION_TIMEOUT_MS`.
@@ -32,7 +31,6 @@ export interface KafkaConsumerStrategyOptions {
    * this only together with a smaller `retryBudgetMs` on the handler.
    */
   sessionTimeoutMs?: number;
-  /** Broker heartbeat interval. Defaults to `DEFAULT_HEARTBEAT_INTERVAL_MS`. */
   heartbeatIntervalMs?: number;
 }
 

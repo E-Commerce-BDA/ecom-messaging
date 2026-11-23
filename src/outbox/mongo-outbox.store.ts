@@ -18,12 +18,10 @@ export interface MongoOutboxStoreOptions {
   db: () => MongoOutboxDb;
   collection?: string;
   producer: string;
-  /** Collection that holds the relay lease. Defaults to `<collection>_locks`. */
   lockCollection?: string;
   lockLeaseSeconds?: number;
 }
 
-/** The lease document is `{ _id: 'relay', locked_until: Date | null }`. */
 const LOCK_ID = "relay";
 const EPOCH = new Date(0);
 
@@ -96,7 +94,6 @@ export class MongoOutboxStore implements OutboxStorePort<MongoSessionLike> {
     this.lockLeaseSeconds = options.lockLeaseSeconds ?? 30;
   }
 
-  /** Indexes: unique on the event id, partial on the pending queue. */
   async initialize(): Promise<void> {
     const events = this.events();
 

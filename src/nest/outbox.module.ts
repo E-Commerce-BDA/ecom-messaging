@@ -38,7 +38,6 @@ export interface MongoOutboxModuleOptions {
   collection: string;
   producer: string;
   clientId: string;
-  /** Structural access to the database, normally `() => connection.db`. */
   db: () => MongoOutboxDb;
   lockCollection?: string;
   lockLeaseSeconds?: number;

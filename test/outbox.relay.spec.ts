@@ -34,7 +34,6 @@ function envelopeFor(eventId: string, cartId = CART_ID): EventEnvelope {
   });
 }
 
-/** `row-01` -> event id ending in `01`, so assertions stay readable. */
 function row(id: string): OutboxRow {
   const suffix = id.slice(-2);
 
@@ -173,7 +172,6 @@ describe("OutboxRelay.drainOnce", () => {
     const relay = newRelay(store, publisher);
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
-      // The store hands back the attempt counter it persisted on the row.
       store.queue = [{ ...row("row-01"), attempts: attempt }];
       await relay.drainOnce();
     }

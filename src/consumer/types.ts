@@ -52,7 +52,6 @@ export type AppliedCounter = "accepted" | "skipped" | "committed";
  * handler — owns that decision.
  */
 export type KafkaHandlerOutcome =
-  /** Side effect applied, or deliberately unnecessary. Committed and counted. */
   | { kind: "applied"; counter?: AppliedCounter }
   /**
    * The event id was already claimed. A no-op: the effect ran in an earlier

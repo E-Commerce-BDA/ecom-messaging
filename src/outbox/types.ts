@@ -170,7 +170,6 @@ export interface OutboxStorePort<Ctx = Queryable> {
     input: OutboxWriteInput<T>,
   ): Promise<string>;
 
-  /** Claim up to `limit` pending rows, leasing them for `leaseSeconds`. */
   claimBatch(limit: number, leaseSeconds: number): Promise<OutboxRow[]>;
 
   markPublished(id: string): Promise<void>;

@@ -19,7 +19,6 @@ export class RecordingPublisher implements PublisherPort {
   }
 
   async close(): Promise<void> {
-    // nothing to close
   }
 
   reset(): void {

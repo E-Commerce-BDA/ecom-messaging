@@ -14,7 +14,6 @@ export interface OutboxRelayOptions {
   logger?: RelayLogger;
   batchSize?: number;
   intervalMs?: number;
-  /** How long a claimed row stays invisible to other workers. Default 30 s. */
   leaseSeconds?: number;
   maxAttempts?: number;
   backoffSeconds?: (attempts: number) => number;
@@ -23,7 +22,6 @@ export interface OutboxRelayOptions {
 export interface DrainResult {
   published: number;
   failed: number;
-  /** True when another worker holds the relay lock and this cycle did nothing. */
   skipped: boolean;
 }
 

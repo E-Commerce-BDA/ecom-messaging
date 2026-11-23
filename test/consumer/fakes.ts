@@ -16,7 +16,6 @@ export class FakeConsumer implements KafkaConsumerLike {
   }
 }
 
-/** The smallest thing that satisfies `KafkaContext`'s used surface. */
 export class FakeContext implements KafkaMessageContextLike {
   constructor(
     readonly consumer: FakeConsumer,

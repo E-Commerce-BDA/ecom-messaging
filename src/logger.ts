@@ -4,7 +4,6 @@ export interface RelayLogger {
   error(message: string, error?: unknown): void;
 }
 
-/** Default logger: console-backed, prefixed, no dependency on Nest. */
 export class ConsoleRelayLogger implements RelayLogger {
   constructor(private readonly prefix = "outbox") {}
 

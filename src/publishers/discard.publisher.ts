@@ -20,6 +20,5 @@ export class DiscardPublisher implements PublisherPort {
   }
 
   async close(): Promise<void> {
-    // nothing to close
   }
 }

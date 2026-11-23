@@ -56,8 +56,6 @@ function peersOf(entry: string): string[] {
 
 describe('entry points do not load a peer the service may not have', () => {
   it('keeps @aws-sdk/client-sqs off the root barrel', () => {
-    // The root is what a service imports for DLQ names, counters and lag —
-    // surfaces with no SQS in them.
     expect(peersOf('index.ts')).not.toContain('@aws-sdk/client-sqs');
   });
 
@@ -82,8 +80,6 @@ describe('entry points do not load a peer the service may not have', () => {
     for (const [subpath, conditions] of Object.entries(manifest.exports)) {
       const source = fromEntry(conditions.import);
 
-      // `./tasks` and `./nest/consumer` are directories/files of re-exports, so a
-      // missing source file means the entry ships something nobody can maintain.
       expect(exists(source), `${subpath} -> ${source}`).toBe(true);
     }
   });
