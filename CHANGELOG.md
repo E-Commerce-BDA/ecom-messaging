@@ -53,7 +53,7 @@ record forever — every suite green, the service down.
 Behaviour with no options passed is unchanged, and only the session timeout
 moves — from 30s to 45s, which strictly _widens_ what a service can do, so no
 pinned consumer can regress. `cart-svc` and `catalog-svc` stay on 0.3.0 until
-their next wave; ADR 44 records the constraint they must meet when they move.
+their next wave; ADR 44 records the constraint they must meet when they move. Both were later repinned to 0.5.0 with `retryBudgetMs: 20_000`, closing the unbounded-ladder gap.
 
 ## 0.4.0
 
