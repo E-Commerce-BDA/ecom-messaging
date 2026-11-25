@@ -95,8 +95,6 @@ describe("PostgresOutboxStore.write", () => {
     expect(envelope).toMatchObject({
       id: EVENT_ID,
       type: "cart.updated",
-      topic: "cart.updated",
-      eventType: "cart.updated",
       producer: "cart-svc",
       idempotencyKey: EVENT_ID,
     });

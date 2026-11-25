@@ -42,7 +42,7 @@ function cartPayload(
 }
 
 describe("buildEventEnvelope", () => {
-  it("dual-writes type, topic and eventType and pins the idempotency key to the id", () => {
+  it("emits one canonical event name and pins the idempotency key to the id", () => {
     const envelope = buildEventEnvelope({
       id: EVENT_ID,
       topic: "cart.updated",
@@ -54,8 +54,6 @@ describe("buildEventEnvelope", () => {
     expect(envelope).toMatchObject({
       id: EVENT_ID,
       type: "cart.updated",
-      topic: "cart.updated",
-      eventType: "cart.updated",
       version: 1,
       producer: "cart-svc",
       idempotencyKey: EVENT_ID,

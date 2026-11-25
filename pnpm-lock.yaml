@@ -12,8 +12,8 @@ importers:
         specifier: ^3.1161.0
         version: 3.1161.0
       '@ecom/contracts':
-        specifier: file:../ecom-contracts/ecom-contracts-1.11.0.tgz
-        version: file:../ecom-contracts/ecom-contracts-1.11.0.tgz(zod@4.6.7)
+        specifier: file:../ecom-contracts/ecom-contracts-2.0.0.tgz
+        version: file:../ecom-contracts/ecom-contracts-2.0.0.tgz(zod@4.6.7)
       '@nestjs/common':
         specifier: ^12.0.1
         version: 12.3.2(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -109,9 +109,9 @@ packages:
   '@borewit/text-codec@0.2.3':
     resolution: {integrity: sha512-49CycTz1aAZmvFcwkeFyhud1HUmRIB5Tabf7ALV+VA4Iu85MTfz2cUwzPagMFAdVBvrWdkCxG67I30tUwwpKsw==}
 
-  '@ecom/contracts@file:../ecom-contracts/ecom-contracts-1.11.0.tgz':
-    resolution: {integrity: sha512-vFBy+u6L3W6gIp/XcUKX4J1YuJYORwoLxVYZALTk1iFGwdU1mL08aLF/pCAUZh3bv9Dp6i50S/ZUqnKyzuAXuw==, tarball: file:../ecom-contracts/ecom-contracts-1.11.0.tgz}
-    version: 1.11.0
+  '@ecom/contracts@file:../ecom-contracts/ecom-contracts-2.0.0.tgz':
+    resolution: {integrity: sha512-UGmOJa0pn8Ra0Lbuvm+SBrrS68Dw+OIkHZoz1BvEpgmGPRd2EYdykGLsBSlP/d+qv4ZQ8CO297w2DuDX+czlzA==, tarball: file:../ecom-contracts/ecom-contracts-2.0.0.tgz}
+    version: 2.0.0
     engines: {node: '>=22'}
     peerDependencies:
       zod: '>=4 <5'
@@ -861,7 +861,7 @@ snapshots:
 
   '@borewit/text-codec@0.2.3': {}
 
-  '@ecom/contracts@file:../ecom-contracts/ecom-contracts-1.11.0.tgz(zod@4.6.7)':
+  '@ecom/contracts@file:../ecom-contracts/ecom-contracts-2.0.0.tgz(zod@4.6.7)':
     dependencies:
       zod: 4.6.7
 

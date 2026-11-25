@@ -22,9 +22,8 @@ export interface EnvelopeInput<T extends EventTopic> {
  * producer's transaction, so a payload that drifted from its contract aborts
  * the business write instead of leaving an unpublishable row behind.
  *
- * `topic` and `eventType` are written alongside `type` because contracts 1.x
- * still carry the pre-1.3.0 field names; `eventEnvelopeSchema` rejects the
- * envelope if the three ever disagree. They disappear in 2.0.0.
+ * Contracts 2.0.0 accepts only the canonical shape: one event name, a version
+ * and an idempotency key. A payload that drifts aborts the producer's write.
  */
 export function buildEventEnvelope<T extends EventTopic>(
   input: EnvelopeInput<T>,
@@ -32,8 +31,6 @@ export function buildEventEnvelope<T extends EventTopic>(
   const envelope = {
     id: input.id,
     type: input.topic,
-    topic: input.topic,
-    eventType: input.topic,
     version: input.version ?? 1,
     timestamp: input.timestamp.toISOString(),
     producer: input.producer,
