@@ -1,0 +1,46 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # The package pins a sibling contracts tarball by relative path. A single
+      # repo checkout has no sibling, so materialize the exact vendored copy
+      # before install; its integrity matches the committed lockfile.
+      - name: Materialize sibling contracts tarball
+        run: |
+          mkdir -p ../ecom-contracts
+          cp ./vendor/ecom-contracts-2.0.0.tgz ../ecom-contracts/ecom-contracts-2.0.0.tgz
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm pack
+
+      - name: Verify tag matches package version
+        run: |
+          node -e "const p=require('./package.json'); if ('v'+p.version !== process.env.GITHUB_REF_NAME) { console.error('tag/version mismatch'); process.exit(1) }"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "./ecom-messaging-${GITHUB_REF_NAME#v}.tgz" --title "$GITHUB_REF_NAME" --generate-notes
